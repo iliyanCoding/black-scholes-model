@@ -28,8 +28,11 @@ def greeks(S, K, T, r, sigma):
     gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
     vega = S * norm.pdf(d1) * np.sqrt(T)
     rho_call = K * T * np.exp(-r * T) * norm.cdf(d2)
-
-    return delta_call, delta_put, gamma, vega, rho_call
+    theta_call = -(S * norm.pdf(d1) * sigma) / (2 * np.sqrt(T)) - r * K * np.exp(
+        -r * T
+    ) * norm.cdf(d2)
+    theta_call = theta_call / 365
+    return delta_call, delta_put, gamma, vega, rho_call, theta_call
 
 
 def plot_option(K, T, r, sigma):
@@ -47,27 +50,24 @@ def plot_option(K, T, r, sigma):
     plt.show()
 
 
-def implied_volatility(market_price, S, K, T, r, option_type="call"):
-    sigma = 0.2  # this is the initial guess
+def implied_volatility(market_price, S, K, T, r, option_type="call", initial_sigma=0.2):
+    sigma = initial_sigma
     tolerance = 1e-6
     max_iterations = 1000
-
-    for _ in range(max_iterations):
+    for i in range(max_iterations):
         call, put = black_scholes(S, K, T, r, sigma)
         price = call if option_type == "call" else put
         error = price - market_price
-
         if abs(error) < tolerance:
             return sigma
-
         vega = greeks(S, K, T, r, sigma)[3]
-
-        sigma = sigma - (price - market_price) / vega
-
+        if vega < 1e-10:
+            break
+        sigma = max(0.001, min(5.0, sigma - error / vega))
     return sigma
 
 
-def plot_vol_smile(S, K, T, r, sigma):
+def plot_vol_smile(S, T, r, sigma):
     strikes = np.linspace(50, 150, 300)
     market_sigmas = [add_vol_smile(strike, S, sigma) for strike in strikes]
     call_prices = [
@@ -76,8 +76,8 @@ def plot_vol_smile(S, K, T, r, sigma):
     ]
     plt.figure(figsize=(10, 6))
     impl_vol = [
-        implied_volatility(price, S, strike, T, r)
-        for price, strike in zip(call_prices, strikes)
+        implied_volatility(price, S, strike, T, r, initial_sigma=ms)
+        for price, strike, ms in zip(call_prices, strikes, market_sigmas)
     ]
     plt.plot(strikes, impl_vol, label="Implied volatility")
     plt.xlabel("Strike price")
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     call, put = black_scholes(args.S, args.K, args.T, args.r, args.sigma)
-    delta_call, delta_put, gamma, vega, rho_call = greeks(
+    delta_call, delta_put, gamma, vega, rho_call, theta_call = greeks(
         args.S, args.K, args.T, args.r, args.sigma
     )
 
@@ -119,8 +119,9 @@ if __name__ == "__main__":
     print(f"Gamma:        {gamma:.4f}")
     print(f"Vega:         {vega:.4f}")
     print(f"Rho (call):   {rho_call:.4f}")
+    print(f"Theta (call): {theta_call:.4f}")
     print(f"\n--- Implied Volatility ---")
     iv = implied_volatility(call, args.S, args.K, args.T, args.r, option_type="call")
     print(f"Implied Vol:  {iv:.4f}")
     plot_option(args.K, args.T, args.r, args.sigma)
-    plot_vol_smile(args.S, args.K, args.T, args.r, args.sigma)
+    plot_vol_smile(args.S, args.T, args.r, args.sigma)
