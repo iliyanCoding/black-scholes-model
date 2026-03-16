@@ -52,7 +52,7 @@ def implied_volatility(market_price, S, K, T, r, option_type="call"):
     tolerance = 1e-6
     max_iterations = 1000
 
-    for i in range(max_iterations):
+    for _ in range(max_iterations):
         call, put = black_scholes(S, K, T, r, sigma)
         price = call if option_type == "call" else put
         error = price - market_price
@@ -65,6 +65,33 @@ def implied_volatility(market_price, S, K, T, r, option_type="call"):
         sigma = sigma - (price - market_price) / vega
 
     return sigma
+
+
+def plot_vol_smile(S, K, T, r, sigma):
+    strikes = np.linspace(50, 150, 300)
+    market_sigmas = [add_vol_smile(strike, S, sigma) for strike in strikes]
+    call_prices = [
+        black_scholes(S, strike, T, r, ms)[0]
+        for strike, ms in zip(strikes, market_sigmas)
+    ]
+    plt.figure(figsize=(10, 6))
+    impl_vol = [
+        implied_volatility(price, S, strike, T, r)
+        for price, strike in zip(call_prices, strikes)
+    ]
+    plt.plot(strikes, impl_vol, label="Implied volatility")
+    plt.xlabel("Strike price")
+    plt.ylabel("Implied volatility")
+    plt.title("Volatility Smile")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
+def add_vol_smile(strike, S, base_sigma):
+    moneyness = abs(np.log(S / strike))
+    smile_sigma = base_sigma + 0.1 * moneyness**2
+    return smile_sigma
 
 
 if __name__ == "__main__":
@@ -96,3 +123,4 @@ if __name__ == "__main__":
     iv = implied_volatility(call, args.S, args.K, args.T, args.r, option_type="call")
     print(f"Implied Vol:  {iv:.4f}")
     plot_option(args.K, args.T, args.r, args.sigma)
+    plot_vol_smile(args.S, args.K, args.T, args.r, args.sigma)
