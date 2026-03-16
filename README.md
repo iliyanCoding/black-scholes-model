@@ -13,7 +13,7 @@ A Python implementation of the Black-Scholes model for European option pricing, 
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.8+
 - NumPy
 - SciPy
 - Matplotlib
@@ -64,6 +64,16 @@ Implied Vol:  0.2000
 Two plots are also displayed:
 1. **Option prices** — Call and put prices vs. spot price, with strike price marked
 2. **Volatility smile** — Implied volatility vs. strike price, showing the characteristic smile shape
+
+## Greeks Explained
+
+| Greek   | What it measures | Intuition |
+|---------|-----------------|-----------|
+| **Delta** | Rate of change of option price with respect to the underlying price | If Delta is 0.47, the option gains roughly $0.47 for every $1 the stock rises. Call deltas range from 0 to 1; put deltas from -1 to 0. |
+| **Gamma** | Rate of change of Delta with respect to the underlying price | Measures how quickly Delta itself shifts as the stock moves. High Gamma means the option's sensitivity is changing fast — common for at-the-money options near expiry. |
+| **Vega**  | Sensitivity of option price to a 1% change in implied volatility | If Vega is 19.66, a 1-percentage-point rise in volatility adds about $0.20 to the option price. Long options benefit from rising volatility. |
+| **Theta** | Rate of time decay per day | How much value the option loses each day, all else equal. A Theta of -0.015 means the option loses about $0.015 per day. Options are "wasting assets" — Theta is almost always negative for long positions. |
+| **Rho**   | Sensitivity of option price to a 1% change in the risk-free rate | If Rho is 42.12, a 1-percentage-point rate hike adds about $0.42 to a call's price. Rho is usually the least impactful Greek for short-dated options. |
 
 ## How It Works
 
