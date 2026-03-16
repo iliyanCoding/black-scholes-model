@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 
 def black_scholes(S, K, T, r, sigma):
+    validate_inputs(S, K, T, r, sigma)
     d1, d2 = compute_d1_d2(S, K, T, r, sigma)
     # calculate call and put price
     call = S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2)
@@ -94,6 +95,20 @@ def add_vol_smile(strike, S, base_sigma):
     return smile_sigma
 
 
+def validate_inputs(S, K, T, r, sigma):
+    if S <= 0:
+        raise ValueError("Stock price S must be greater than zero")
+
+    if K <= 0:
+        raise ValueError("Strike price K must be greater than zero")
+
+    if T <= 0:
+        raise ValueError("Expiry time T must be greater than 0")
+
+    if sigma <= 0:
+        raise ValueError("Volatility sigma must be greater than zero")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Black-Scholes Option Pricer")
     parser.add_argument("--S", type=float, required=True, help="Stock price")
@@ -105,23 +120,29 @@ if __name__ == "__main__":
     parser.add_argument("--sigma", type=float, required=True, help="Volatility")
     args = parser.parse_args()
 
-    call, put = black_scholes(args.S, args.K, args.T, args.r, args.sigma)
-    delta_call, delta_put, gamma, vega, rho_call, theta_call = greeks(
-        args.S, args.K, args.T, args.r, args.sigma
-    )
+    try:
+        call, put = black_scholes(args.S, args.K, args.T, args.r, args.sigma)
+        delta_call, delta_put, gamma, vega, rho_call, theta_call = greeks(
+            args.S, args.K, args.T, args.r, args.sigma
+        )
 
-    print(f"\n--- Black-Scholes Option Pricer ---")
-    print(f"Call Price:   ${call:.2f}")
-    print(f"Put Price:    ${put:.2f}")
-    print(f"\n--- Greeks ---")
-    print(f"Delta (call): {delta_call:.4f}")
-    print(f"Delta (put):  {delta_put:.4f}")
-    print(f"Gamma:        {gamma:.4f}")
-    print(f"Vega:         {vega:.4f}")
-    print(f"Rho (call):   {rho_call:.4f}")
-    print(f"Theta (call): {theta_call:.4f}")
-    print(f"\n--- Implied Volatility ---")
-    iv = implied_volatility(call, args.S, args.K, args.T, args.r, option_type="call")
-    print(f"Implied Vol:  {iv:.4f}")
-    plot_option(args.K, args.T, args.r, args.sigma)
-    plot_vol_smile(args.S, args.T, args.r, args.sigma)
+        print(f"\n--- Black-Scholes Option Pricer ---")
+        print(f"Call Price:   ${call:.2f}")
+        print(f"Put Price:    ${put:.2f}")
+        print(f"\n--- Greeks ---")
+        print(f"Delta (call): {delta_call:.4f}")
+        print(f"Delta (put):  {delta_put:.4f}")
+        print(f"Gamma:        {gamma:.4f}")
+        print(f"Vega:         {vega:.4f}")
+        print(f"Rho (call):   {rho_call:.4f}")
+        print(f"Theta (call): {theta_call:.4f}")
+        print(f"\n--- Implied Volatility ---")
+        iv = implied_volatility(
+            call, args.S, args.K, args.T, args.r, option_type="call"
+        )
+        print(f"Implied Vol:  {iv:.4f}")
+        plot_option(args.K, args.T, args.r, args.sigma)
+        plot_vol_smile(args.S, args.T, args.r, args.sigma)
+    except ValueError as e:
+        print(f"\nError: {e}")
+        exit(1)
